@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
 import SearchForm from './SearchForm/SearchForm.js';
 import Preloader from './Preloader/Preloader.js';

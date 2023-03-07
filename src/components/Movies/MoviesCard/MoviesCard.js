@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import { useCallback, useContext } from 'react';
 import { CurrentUserContext } from '../../../contexts/CurrentUserContext';
 
 import './MoviesCard.css';
@@ -14,7 +14,7 @@ function MoviesCard(props) {
     pageSaveMovies,
   } = props;
 
-  const currentUser = React.useContext(CurrentUserContext);
+  const currentUser = useContext(CurrentUserContext);
 
   // Состояние лайка карты -----------------
   const isLiked = useCallback(() => {

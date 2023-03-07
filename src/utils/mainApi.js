@@ -1,87 +1,72 @@
+import { $api } from './api';
+
 class MainApi {
   constructor(settings) {
     this._settings = settings;
   }
 
-  // Проверка получения ответа --------------
-  _checkResponse(res) {
-    if (res.ok) {
-      return res.json();
-    } else {
-      throw new Error(`Ошибка: ${res.statusText}`);
-    }
-  }
-
   getUserInfo() {
-    return fetch(`${this._settings.baseUrl}/users/me`, {
-      headers: {
-        'Content-Type': 'application/json',
-        authorization: localStorage.getItem('jwt'),
-      },
-    }).then(this._checkResponse);
+    return $api
+      .get('/users/me', {
+        headers: { authorization: localStorage.getItem('token') },
+      })
+      .then((res) => res.data);
   }
 
   getSaveCards() {
-    return fetch(`${this._settings.baseUrl}/movies`, {
-      headers: {
-        'Content-Type': 'application/json',
-        authorization: localStorage.getItem('jwt'),
-      },
-    }).then(this._checkResponse);
+    return $api
+      .get('/movies', {
+        headers: { authorization: localStorage.getItem('token') },
+      })
+      .then((res) => res.data);
   }
 
   addCard(card) {
-    return fetch(`${this._settings.baseUrl}/movies`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        authorization: localStorage.getItem('jwt'),
-      },
-      body: JSON.stringify({
-        country: card.country,
-        director: card.director,
-        duration: card.duration,
-        year: card.year,
-        description: card.description,
-        image: `https://api.nomoreparties.co/${card.image.url}`,
-        trailerLink: card.trailerLink,
-        nameRU: card.nameRU,
-        nameEN: card.nameEN,
-        thumbnail: `https://api.nomoreparties.co/${card.image.formats.thumbnail.url}`,
-        movieId: card.id,
-      }),
-    }).then(this._checkResponse);
+    return $api
+      .post(
+        '/movies',
+        {
+          country: card.country,
+          director: card.director,
+          duration: card.duration,
+          year: card.year,
+          description: card.description,
+          image: `https://api.nomoreparties.co/${card.image.url}`,
+          trailerLink: card.trailerLink,
+          nameRU: card.nameRU,
+          nameEN: card.nameEN,
+          thumbnail: `https://api.nomoreparties.co/${card.image.formats.thumbnail.url}`,
+          movieId: card.id,
+        },
+        {
+          headers: { authorization: localStorage.getItem('token') },
+        }
+      )
+      .then((res) => res.data);
   }
 
   deleteCard(obj) {
-    return fetch(`${this._settings.baseUrl}/movies/${obj._id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        authorization: localStorage.getItem('jwt'),
-      },
-    }).then(this._checkResponse);
+    return $api
+      .delete(`/movies/${obj._id}`, {
+        headers: { authorization: localStorage.getItem('token') },
+      })
+      .then((res) => res.data);
   }
 
   sendInfoProfile(formValues) {
-    return fetch(`${this._settings.baseUrl}/users/me`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        authorization: localStorage.getItem('jwt'),
-      },
-      body: JSON.stringify({
-        name: formValues.name,
-        email: formValues.email,
-      }),
-    }).then(this._checkResponse);
+    return $api
+      .patch(
+        '/users/me',
+        {
+          name: formValues.name,
+          email: formValues.email,
+        },
+        {
+          headers: { authorization: localStorage.getItem('token') },
+        }
+      )
+      .then((res) => res.data);
   }
 }
 
-const baseUrl = `${window.location.protocol}${
-  process.env.REACT_APP_API_URL || '//localhost:3001'
-}`;
-
-export const mainApi = new MainApi({
-  baseUrl: 'http://localhost:3001',
-});
+export const mainApi = new MainApi();

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import './Register.css';
@@ -9,20 +9,20 @@ function Register(props) {
   const { handleRegister, errorMessage, formReset, resetErrors } = props;
 
   const [isName, setIsName] = useState('');
-  const [values, setValues] = React.useState({
+  const [values, setValues] = useState({
     name: '',
     email: '',
     password: '',
   });
-  const [errors, setErrors] = React.useState({
+  const [errors, setErrors] = useState({
     name: '',
     password: '',
   });
-  const [inputEventTarget, setInputEventTarget] = React.useState({});
-  const [disabled, setDisabled] = React.useState(true);
-  const [nameValid, setNameValid] = React.useState(false);
-  const [emailValid, setEmailValid] = React.useState(false);
-  const [passwordValid, setPasswordValid] = React.useState(false);
+  const [inputEventTarget, setInputEventTarget] = useState({});
+  const [disabled, setDisabled] = useState(true);
+  const [nameValid, setNameValid] = useState(false);
+  const [emailValid, setEmailValid] = useState(false);
+  const [passwordValid, setPasswordValid] = useState(false);
 
   //Ввод данных и валидация
   const handleChange = (event) => {
@@ -168,7 +168,7 @@ function Register(props) {
         <button
           className='register__submit button-hover'
           type='submit'
-          disabled={disabled}
+          // disabled={disabled}
         >
           Зарегистрироваться
         </button>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import './Register/Register.css';
@@ -9,14 +9,14 @@ function Login(props) {
   const { handleLogin, errorMessage, formReset, resetErrors } = props;
 
   const [isName, setIsName] = useState('');
-  const [values, setValues] = React.useState(false);
-  const [errors, setErrors] = React.useState({
+  const [values, setValues] = useState(false);
+  const [errors, setErrors] = useState({
     password: '',
   });
-  const [inputEventTarget, setInputEventTarget] = React.useState({});
-  const [disabled, setDisabled] = React.useState(true);
-  const [emailValid, setEmailValid] = React.useState(false);
-  const [passwordValid, setPasswordValid] = React.useState(false);
+  const [inputEventTarget, setInputEventTarget] = useState({});
+  const [disabled, setDisabled] = useState(true);
+  const [emailValid, setEmailValid] = useState(false);
+  const [passwordValid, setPasswordValid] = useState(false);
 
   //Ввод данных и валидация
   const handleChange = (event) => {

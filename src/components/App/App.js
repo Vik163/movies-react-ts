@@ -18,11 +18,12 @@ import ProtectedRoute from '../ProtectedRoute';
 import { CurrentUserContext } from '../../contexts/CurrentUserContext';
 import { mainApi } from '../../utils/mainApi.js';
 import { moviesApi } from '../../utils/moviesApi.js';
-import { auth } from '../../utils/auth.js';
+import { auth } from '../../utils/authApi.js';
 
 function App() {
   const [currentUser, setCurrentUser] = useState({});
-  const history = useNavigate();
+  // console.log(currentUser);
+  const navigate = useNavigate();
 
   const [formReset, setFormReset] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -39,37 +40,49 @@ function App() {
   const initialCards = JSON.parse(localStorage.getItem('initialCards'));
   const storySaveCards = JSON.parse(localStorage.getItem('saveCards'));
 
-  // Проверка авторизации ------------------------
-  const checkToken = () => {
-    const jwt = localStorage.getItem('jwt');
+  function handleErrors(error) {
+    // if (error.response) {
+    //   // Запрос был сделан, и сервер ответил кодом состояния, который
+    //   // выходит за пределы 2xx
+    //   // console.log(error.response.data);
+    //   // console.log(error.response.status);
+    //   // console.log(error.response.headers);
+    // } else if (error.request) {
+    //   // Запрос был сделан, но ответ не получен
+    //   // `error.request`- это экземпляр XMLHttpRequest в браузере и экземпляр
+    //   // http.ClientRequest в node.js
+    //   // console.log(error.request);
+    // } else {
+    //   // Произошло что-то при настройке запроса, вызвавшее ошибку
+    //   // console.log('Error', error.message);
+    // }
+    // // console.log(error.config);
+    // throw new Error(`Ошибка: ${error.response.status}`);
+  }
 
-    if (jwt) {
-      auth
-        .checkToken(jwt)
-        .then((res) => {
-          res
-            ? localStorage.setItem('loggedIn', true)
-            : localStorage.setItem('loggedIn', false);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-  };
-
+  // Получение карт пользователя и его данных =====================
   useEffect(() => {
-    checkToken();
+    Promise.all([mainApi.getUserInfo(), mainApi.getSaveCards()])
+      .then(([userData, saveCards]) => {
+        console.log(userData);
+        setCurrentUser(userData);
+        setInitialSavedCards(saveCards);
+        setSavedCards(saveCards);
+      })
+      .catch((err) => handleErrors(err));
   }, []);
-  // ----------------------------------------------
 
   // Получение первоначальных карт --------------------------------
   useEffect(() => {
     if (loggedIn) {
       if (!initialCards) {
-        moviesApi.getCards().then((cards) => {
-          setCards(cards);
-          localStorage.setItem('initialCards', JSON.stringify(cards));
-        });
+        moviesApi
+          .getCards()
+          .then((cards) => {
+            setCards(cards);
+            localStorage.setItem('initialCards', JSON.stringify(cards));
+          })
+          .catch((err) => handleErrors(err));
       } else {
         if (!storySaveCards) {
           // Отсутствует история
@@ -86,22 +99,6 @@ function App() {
   useEffect(() => {
     setSavedCards(initialSavedCards);
   }, [initialSavedCards]);
-
-  // Получение карт пользователя и его данных --------------------
-  useEffect(() => {
-    if (loggedIn) {
-      Promise.all([mainApi.getUserInfo(), mainApi.getSaveCards()])
-        .then(([userData, saveCards]) => {
-          setCurrentUser(userData);
-          setInitialSavedCards(saveCards);
-          setSavedCards(saveCards);
-        })
-        .catch((err) => {
-          handleErrors(err);
-          console.log(err);
-        });
-    }
-  }, [loggedIn]);
 
   // получение первоначальных карт при пустом инпуте поиска фильмов
   function getInitialCards() {
@@ -134,7 +131,6 @@ function App() {
         err.message === 'Ошибка: Bad Request'
           ? setErrorMessage('При регистрации пользователя произошла ошибка')
           : handleErrors(err);
-        console.log(err);
       });
   }
 
@@ -142,11 +138,12 @@ function App() {
     return auth
       .authorization(password, email)
       .then((data) => {
-        localStorage.setItem('jwt', data.token);
+        console.log(data);
+        localStorage.setItem('token', data.accessToken);
         localStorage.setItem('loggedIn', true);
         setCurrentUser(data.user);
         setErrorMessage('');
-        history.push('/movies');
+        navigate('/movies');
       })
       .catch((err) => {
         setFormReset(true);
@@ -158,15 +155,19 @@ function App() {
   }
 
   function signOut() {
-    localStorage.removeItem('jwt');
-    localStorage.removeItem('saveCards');
-    localStorage.removeItem('loggedIn');
-    localStorage.removeItem('initialCards');
+    return auth.logout().then((data) => {
+      if (data) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('saveCards');
+        localStorage.removeItem('loggedIn');
+        localStorage.removeItem('initialCards');
 
-    setStory({});
-    setCurrentUser({});
+        setStory({});
+        setCurrentUser({});
 
-    history.push('/');
+        navigate('/');
+      }
+    });
   }
 
   // Обновление пользователя -------------------------
@@ -174,6 +175,7 @@ function App() {
     mainApi
       .sendInfoProfile(obj)
       .then((result) => {
+        console.log(result);
         setCurrentUser(result);
         setErrorMessage('Данные успешно обновлены! ');
       })
@@ -185,18 +187,18 @@ function App() {
       });
   }
 
-  //Сортировка отправки ошибок
-  function handleErrors(err) {
-    if (
-      err.message === 'Ошибка: 404' ||
-      err.message === 'Ошибка: Internal Server Error' ||
-      err.message === 'Failed to fetch'
-    ) {
-      setErrorPageMessage(errorHandler(err));
-      history.push('*');
-    }
-    setErrorMessage(errorHandler(err));
-  }
+  // //Сортировка отправки ошибок
+  // function handleErrors(err) {
+  //   if (
+  //     err.message === 'Ошибка: 404' ||
+  //     err.message === 'Ошибка: Internal Server Error' ||
+  //     err.message === 'Failed to fetch'
+  //   ) {
+  //     setErrorPageMessage(errorHandler(err));
+  //     navigate('*');
+  //   }
+  //   setErrorMessage(errorHandler(err));
+  // }
 
   //Поиск в несохраненных картах
   function searchCards(value, isToggle) {

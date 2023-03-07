@@ -1,32 +1,40 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 
 import './Profile.css';
 
 import { CurrentUserContext } from '../../contexts/CurrentUserContext';
 
 function Profile(props) {
-  const { signOut, handleUpdateUser, errorMessage, getInitialSaveCards } =
-    props;
-  const currentUser = React.useContext(CurrentUserContext);
+  const {
+    signOut,
+    handleUpdateUser,
+    errorMessage,
+    getInitialSaveCards,
+  } = props;
+  const currentUser = useContext(CurrentUserContext);
 
   const [isToggle, setIsToggle] = useState(false);
   const [isName, setIsName] = useState('');
-  const [values, setValues] = React.useState({
+  const [values, setValues] = useState({
     name: '',
     email: '',
   });
-  const [errorUser, setErrorUser] = React.useState('');
+  const [errorUser, setErrorUser] = useState('');
   const [inputDisabled, setInputDisabled] = useState(true);
-  const [errors, setErrors] = React.useState({
+  const [errors, setErrors] = useState({
     name: '',
   });
-  const [inputEventTarget, setInputEventTarget] = React.useState({});
-  const [disabled, setDisabled] = React.useState(true);
-  const [emailValid, setEmailValid] = React.useState(false);
+  const [inputEventTarget, setInputEventTarget] = useState({});
+  const [disabled, setDisabled] = useState(true);
+  const [emailValid, setEmailValid] = useState(false);
 
   useEffect(() => {
     getInitialSaveCards();
   }, []);
+
+  // useEffect(() => {
+  //   errorMessage && setUserSuccessful(errorMessage);
+  // }, [errorMessage]);
 
   //Ввод данных и валидация
   const handleChange = (event) => {
@@ -56,14 +64,15 @@ function Profile(props) {
         [inputEventTarget.name]: inputEventTarget.validationMessage,
       });
     }
+    checkUser();
   }, [values]);
 
   // Поиск сравнения вводимых данных, данным зарегистророванного пользователя
   // Переключение активности кнопки submit ---------------------
-  useEffect(() => {
+  const checkUser = () => {
     if (
-      values.name === currentUser.name &&
-      values.email === currentUser.email
+      values.email === currentUser.email &&
+      values.name === currentUser.name
     ) {
       setErrorUser('Пользователь с таким email уже существует');
       setDisabled(true);
@@ -76,7 +85,7 @@ function Profile(props) {
         setDisabled(false);
       }
     }
-  }, [values, errors]);
+  };
 
   // Сброс -------------------------------
   const resetForm = useCallback(() => {
@@ -87,15 +96,25 @@ function Profile(props) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    handleUpdateUser(values);
-    setInputDisabled(true);
-    resetForm();
+    !errorUser && handleUpdateUser(values);
   };
+
+  useEffect(() => {
+    if (errorMessage) {
+      resetForm();
+      setIsToggle(!isToggle);
+      setErrorUser('');
+
+      setInputDisabled(true);
+    }
+  }, [errorMessage]);
 
   // Переключатель кнопки сохранить ----
   const toggle = () => {
     setIsToggle(!isToggle);
     setInputDisabled(false);
+
+    setErrorUser('');
     setValues({
       name: currentUser.name,
       email: currentUser.email,
@@ -113,6 +132,7 @@ function Profile(props) {
             className='profile__input profile__input_type_name'
             id='name'
             type='text'
+            onFocus={handleChange}
             onChange={handleChange}
             value={values.name ?? currentUser.name}
             placeholder={currentUser.name}
@@ -135,8 +155,9 @@ function Profile(props) {
             className='profile__input profile__input_type_email'
             id='email'
             type='email'
+            onFocus={handleChange}
             onChange={handleChange}
-            value={values.email ?? currentUser.name}
+            value={values.email ?? currentUser.email}
             placeholder={currentUser.email}
             name='email'
             disabled={inputDisabled}
@@ -152,7 +173,6 @@ function Profile(props) {
         <button
           className='profile__submit button-hover'
           type='submit'
-          onClick={toggle}
           // Изменение кнопки "сохранить" -----------
           style={{ display: !isToggle && 'none' }}
           disabled={disabled}
@@ -161,8 +181,7 @@ function Profile(props) {
         </button>
       </form>
       <span className='profile__error'>
-        {errorMessage}
-        {errorUser}
+        {errorUser ? errorUser : errorMessage}
       </span>
       {/* Изменение кнопки "редактировать" */}
       <div
