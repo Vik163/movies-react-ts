@@ -1,8 +1,9 @@
 import React from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 
-const ProtectedRoute = ({ loggedIn, ...props }) => {
+const ProtectedRoute = () => {
   let location = useLocation();
+  const loggedIn = JSON.parse(localStorage.getItem('loggedIn'));
 
   // Не пускает зарегистрированного пользователя на страницы регистрации и авторизации
   if (location.pathname === '/sign-up' || location.pathname === '/sign-in') {

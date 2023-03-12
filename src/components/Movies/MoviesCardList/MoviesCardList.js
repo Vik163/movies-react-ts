@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
+import { useAppSelector } from '../../../hooks/redux';
 
 import './MoviesCardList.css';
 
 import Card from '../MoviesCard/MoviesCard.js';
 
 function MoviesCardList(props) {
-  const {
-    cards,
-    deleteCard,
-    addCard,
-    savedCards,
-    pageSaveMovies,
-    initialSavedCards,
-  } = props;
+  const { deleteCard, addCard, pageSaveMovies } = props;
 
+  const { movies, savedCards } = useAppSelector((state) => ({
+    movies: state.moviesReducer.movies,
+    savedCards: state.moviesReducer.moviesSaved,
+  }));
+  // const [movies, setMovies] = useState([]);
+  console.log(movies);
+  // console.log(cards);
+  // console.log(savedCards);
+  // const initialCards = JSON.parse(localStorage.getItem('initialCards'));
   // Кнопка ещё ---------------------------------------
   // Точки перелома -------------------------
   const [isDesktop, setIsDesktop] = useState(
@@ -25,6 +28,10 @@ function MoviesCardList(props) {
   // Количество отображаемых карт в зависимости от ширины экрана ---
   const numberAddCards = (isDesktop && 12) || (isMobile && 5) || 8;
   const [indexArray, setIndexArray] = useState(numberAddCards);
+
+  // useEffect(() => {
+  //   pageSaveMovies ? setMovies(savedCards) : setMovies(cards);
+  // }, []);
 
   useEffect(() => {
     setIndexArray(numberAddCards);
@@ -57,20 +64,21 @@ function MoviesCardList(props) {
 
   const moviesCardList = (
     <ul className='moviesCardList__container'>
-      {cards
-        .map((card) => (
-          <Card
-            card={card}
-            key={card.id || card._id}
-            isMobile={isMobile}
-            addCard={addCard}
-            initialSavedCards={initialSavedCards}
-            deleteCard={deleteCard}
-            savedCards={savedCards}
-            pageSaveMovies={pageSaveMovies}
-          />
-        ))
-        .slice(0, !pageSaveMovies ? indexArray : 1000)}
+      {movies &&
+        movies
+          .map((card) => (
+            <Card
+              card={card}
+              key={card.id || card._id}
+              isMobile={isMobile}
+              addCard={addCard}
+              // initialSavedCards={initialSavedCards}
+              deleteCard={deleteCard}
+              // savedCards={savedCards}
+              pageSaveMovies={pageSaveMovies}
+            />
+          ))
+          .slice(0, !pageSaveMovies ? indexArray : 1000)}
     </ul>
   );
   // -------------------------------------------------------------------------
@@ -81,7 +89,7 @@ function MoviesCardList(props) {
         {moviesCardList}
         {/* Кнопка еще только на странице несохраненных фильмов */}
         {!pageSaveMovies &&
-          moviesCardList.props.children.length < cards.length && (
+          moviesCardList.props.children.length < movies.length && (
             <button
               className='moviesCardList__button-else button-hover'
               aria-label='in'

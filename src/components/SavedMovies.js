@@ -18,7 +18,6 @@ function SavedMovies(props) {
     getInitialSaveCards,
     preloaderMessage,
   } = props;
-
   return (
     <main className='main'>
       <SearchForm

@@ -1,26 +1,28 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-import './Register.css';
+import '../pages/Register/Register.css';
 
-import registerLogo from '../../images/logo.svg';
+import registerLogo from '../images/logo.svg';
+import { useAppSelector, useAppDispatch } from '../hooks/redux';
+import { login } from '../store/action-creators/login-actions';
 
-function Register(props) {
-  const { handleRegister, errorMessage, formReset, resetErrors } = props;
+function Login(props) {
+  const { resetErrors } = props;
+
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { user, errorMessage, formReset } = useAppSelector(
+    (state) => state.authReducer
+  );
 
   const [isName, setIsName] = useState('');
-  const [values, setValues] = useState({
-    name: '',
-    email: '',
-    password: '',
-  });
+  const [values, setValues] = useState(false);
   const [errors, setErrors] = useState({
-    name: '',
     password: '',
   });
   const [inputEventTarget, setInputEventTarget] = useState({});
   const [disabled, setDisabled] = useState(true);
-  const [nameValid, setNameValid] = useState(false);
   const [emailValid, setEmailValid] = useState(false);
   const [passwordValid, setPasswordValid] = useState(false);
 
@@ -35,7 +37,7 @@ function Register(props) {
     setValues({ ...values, [name]: value });
   };
 
-  // Валидация name, email и password ----------------------------------------------
+  // Валидация email и password ----------------------------------------------
   useEffect(() => {
     if (values.email) {
       if (values.email.match(/^[\w]{1}[\w-.]*@[\w-]+\.[a-z]{2,4}$/i) === null) {
@@ -54,18 +56,11 @@ function Register(props) {
         [inputEventTarget.name]: inputEventTarget.validationMessage,
       });
     }
-    if (inputEventTarget.name === 'name') {
-      setNameValid(inputEventTarget.closest('input').checkValidity());
-      setErrors({
-        ...errors,
-        [inputEventTarget.name]: inputEventTarget.validationMessage,
-      });
-    }
   }, [values]);
 
   // Переключение активности кнопки submit ---
   useEffect(() => {
-    if (emailValid.valid && passwordValid && nameValid) {
+    if (emailValid.valid && passwordValid) {
       setDisabled(false);
     } else {
       setDisabled(true);
@@ -75,15 +70,20 @@ function Register(props) {
   // Сброс -------------------------------
   useEffect(() => {
     if (formReset) {
-      setValues({ name: '', email: '', password: '' });
+      setValues({ email: '', password: '' });
       setErrors({});
       setDisabled(true);
     }
   }, [formReset]);
 
+  useEffect(() => {
+    user && navigate('/movies');
+  }, [user]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    handleRegister(values);
+    dispatch(login(values));
+
     setDisabled(false);
   };
 
@@ -93,33 +93,9 @@ function Register(props) {
         <img src={registerLogo} alt='Логотип' />
       </Link>
 
-      <h2 className='register__title'>Добро пожаловать!</h2>
+      <h2 className='register__title'>Рады видеть!</h2>
 
-      <form className='register__form' onSubmit={handleSubmit} noValidate>
-        <label className='register__label'>
-          <span className='register__input-title'>Имя</span>
-          <input
-            className='register__input register__input_type_name'
-            id='name'
-            type='text'
-            onChange={handleChange}
-            value={values.name ?? ''}
-            placeholder='Имя'
-            name='name'
-            minLength='2'
-            maxLength='30'
-            required
-          />
-          {/* Показать ошибку валидации */}
-          {isName === 'name' && (
-            <span
-              className='register__input-error'
-              style={{ display: 'block' }}
-            >
-              {errors.name}
-            </span>
-          )}
-        </label>
+      <form className='register__form' onSubmit={handleSubmit}>
         <label className='register__label'>
           <span className='register__input-title'>E-mail</span>
           <input
@@ -166,22 +142,22 @@ function Register(props) {
           )}
         </label>
         <button
-          className='register__submit button-hover'
+          className='register__submit register__submit-login button-hover'
           type='submit'
-          // disabled={disabled}
+          disabled={disabled}
         >
-          Зарегистрироваться
+          Войти
         </button>
       </form>
-      <span className='register__error'>{errorMessage}</span>
+      <span className='register__error-login'>{errorMessage}</span>
       <div className='register__caption'>
-        <span>Уже зарегистрированы?</span>
-        <Link className='register__caption-link button-hover' to='/sign-in'>
-          Войти
+        <span>Ещё не зарегистрированы?</span>
+        <Link className='register__caption-link button-hover' to='/sign-up'>
+          Регистрация
         </Link>
       </div>
     </div>
   );
 }
 
-export default Register;
+export default Login;

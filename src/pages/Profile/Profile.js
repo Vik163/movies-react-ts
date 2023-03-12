@@ -1,17 +1,21 @@
-import React, { useEffect, useState, useCallback, useContext } from 'react';
+import { useEffect, useState, useCallback, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 
 import './Profile.css';
 
+import { auth } from '../../utils/authApi';
+
 import { CurrentUserContext } from '../../contexts/CurrentUserContext';
+import { logout } from '../../store/action-creators/logout-actions';
 
 function Profile(props) {
-  const {
-    signOut,
-    handleUpdateUser,
-    errorMessage,
-    getInitialSaveCards,
-  } = props;
+  const { handleUpdateUser, errorMessage, getInitialSaveCards } = props;
+  const { user } = useAppSelector((state) => state.authReducer);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const currentUser = useContext(CurrentUserContext);
+  const loggedIn = JSON.parse(localStorage.getItem('loggedIn'));
 
   const [isToggle, setIsToggle] = useState(false);
   const [isName, setIsName] = useState('');
@@ -28,9 +32,9 @@ function Profile(props) {
   const [disabled, setDisabled] = useState(true);
   const [emailValid, setEmailValid] = useState(false);
 
-  useEffect(() => {
-    getInitialSaveCards();
-  }, []);
+  // useEffect(() => {
+  //   getInitialSaveCards();
+  // }, []);
 
   // useEffect(() => {
   //   errorMessage && setUserSuccessful(errorMessage);
@@ -98,6 +102,14 @@ function Profile(props) {
     e.preventDefault();
     !errorUser && handleUpdateUser(values);
   };
+
+  useEffect(() => {
+    user && navigate('/');
+  }, [user]);
+
+  function signOut() {
+    dispatch(logout());
+  }
 
   useEffect(() => {
     if (errorMessage) {

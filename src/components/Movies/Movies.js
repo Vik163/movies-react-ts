@@ -22,7 +22,7 @@ function Movies(props) {
   } = props;
 
   useEffect(() => {
-    getInitialSaveCards();
+    // getInitialSaveCards();
   }, []);
 
   return (
@@ -37,10 +37,9 @@ function Movies(props) {
         <Preloader preloaderMessage={preloaderMessage} />
       ) : (
         <MoviesCardList
-          cards={cards}
           pageSaveMovies={pageSaveMovies}
           deleteCard={deleteCard}
-          initialSavedCards={initialSavedCards}
+          // initialSavedCards={initialSavedCards}
           addCard={addCard}
           savedCards={savedCards}
           story={story}

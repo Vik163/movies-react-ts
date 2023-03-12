@@ -1,26 +1,47 @@
 import { useState, useEffect } from 'react';
-import { Route, Routes, useNavigate } from 'react-router-dom';
+import { Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 
 import './App.css';
 
-import Login from '../Login.js';
-import Register from '../Register/Register.js';
-import Profile from '../Profile/Profile.js';
-import ErrorPage from '../Errors/ErrorPage.js';
+import { useAppDispatch, useAppSelector } from '../../hooks/redux';
+
+import Login from '../../pages/Login.js';
+import Register from '../../pages/Register/Register.js';
+import Profile from '../../pages/Profile/Profile.js';
+import ErrorPage from '../../pages/error/ErrorPage.js';
 import Header from '../Header/Header.js';
 import Footer from '../Footer/Footer.js';
 import Main from '../Main/Main.js';
 import Movies from '../Movies/Movies';
 import SavedMovies from '../SavedMovies';
-import errorHandler from '../Errors/ErrorHandler';
+import errorHandler from '../ErrorHandler';
 
 import ProtectedRoute from '../ProtectedRoute';
 import { CurrentUserContext } from '../../contexts/CurrentUserContext';
 import { mainApi } from '../../utils/mainApi.js';
 import { moviesApi } from '../../utils/moviesApi.js';
 import { auth } from '../../utils/authApi.js';
+import { getMoviesInitial } from '../../store/action-creators/movies-actions';
+import { getUser } from '../../store/action-creators/user-actions';
+import { getMoviesSaved } from '../../store/action-creators/movies-saved-actions';
+import {
+  setMovies,
+  setSaveMovies,
+  setInitialSaveMovies,
+  setStoryMovies,
+  setStorySavedMovies,
+} from '../../store/reducers/movies-slice';
 
 function App() {
+  const dispatch = useAppDispatch();
+  const { pathname } = useLocation();
+  console.log(pathname);
+  const { user, moviesInitial, saveCards } = useAppSelector((state) => ({
+    user: state.userReducer.user,
+    moviesInitial: state.moviesReducer.moviesInitial,
+    saveCards: state.moviesReducer.moviesSaved,
+  }));
+  // console.log(user);
   const [currentUser, setCurrentUser] = useState({});
   // console.log(currentUser);
   const navigate = useNavigate();
@@ -36,9 +57,9 @@ function App() {
   const [storySavePage, setStorySavePage] = useState({});
   const [cards, setCards] = useState([]);
   const [savedCards, setSavedCards] = useState([]);
-  const loggedIn = localStorage.getItem('loggedIn');
   const initialCards = JSON.parse(localStorage.getItem('initialCards'));
   const storySaveCards = JSON.parse(localStorage.getItem('saveCards'));
+  const loggedIn = JSON.parse(localStorage.getItem('loggedIn'));
 
   function handleErrors(error) {
     // if (error.response) {
@@ -62,34 +83,32 @@ function App() {
 
   // Получение карт пользователя и его данных =====================
   useEffect(() => {
-    Promise.all([mainApi.getUserInfo(), mainApi.getSaveCards()])
+    Promise.all([dispatch(getUser()), dispatch(getMoviesSaved())])
       .then(([userData, saveCards]) => {
-        console.log(userData);
         setCurrentUser(userData);
-        setInitialSavedCards(saveCards);
-        setSavedCards(saveCards);
+        dispatch(setInitialSaveMovies(saveCards));
+        dispatch(setSaveMovies(saveCards));
       })
       .catch((err) => handleErrors(err));
   }, []);
+
+  useEffect(() => {
+    pathname === '/saved-movies' && dispatch(setMovies(saveCards));
+  }, [saveCards]);
 
   // Получение первоначальных карт --------------------------------
   useEffect(() => {
     if (loggedIn) {
       if (!initialCards) {
-        moviesApi
-          .getCards()
-          .then((cards) => {
-            setCards(cards);
-            localStorage.setItem('initialCards', JSON.stringify(cards));
-          })
-          .catch((err) => handleErrors(err));
+        dispatch(getMoviesInitial());
       } else {
         if (!storySaveCards) {
           // Отсутствует история
-          setCards(initialCards);
+          dispatch(setMovies(initialCards));
         } else {
-          setCards(storySaveCards.arr); // Есть история
-          setStory(storySaveCards);
+          dispatch(setMovies(storySaveCards.arr)); // Есть история
+          dispatch(setStoryMovies(storySaveCards));
+          // setStory(storySaveCards);
         }
       }
     }
@@ -97,14 +116,15 @@ function App() {
 
   // Карты пользователя --------------
   useEffect(() => {
-    setSavedCards(initialSavedCards);
+    dispatch(setSaveMovies(initialSavedCards));
+    // setSavedCards(initialSavedCards);
   }, [initialSavedCards]);
 
   // получение первоначальных карт при пустом инпуте поиска фильмов
   function getInitialCards() {
     if (loggedIn) {
       setIsPreloader(false);
-      setCards(initialCards);
+      dispatch(setMovies(initialCards));
     }
   }
 
@@ -115,59 +135,6 @@ function App() {
       setSavedCards(initialSavedCards);
       setStorySavePage({});
     }
-  }
-
-  // Регистрация с немедленной авторизацией
-  function handleRegister({ name, password, email }) {
-    return auth
-      .registration(name, password, email)
-      .then((res) => {
-        if (res) {
-          handleLogin({ password, email });
-        }
-      })
-      .catch((err) => {
-        setFormReset(true);
-        err.message === 'Ошибка: Bad Request'
-          ? setErrorMessage('При регистрации пользователя произошла ошибка')
-          : handleErrors(err);
-      });
-  }
-
-  function handleLogin({ password, email }) {
-    return auth
-      .authorization(password, email)
-      .then((data) => {
-        console.log(data);
-        localStorage.setItem('token', data.accessToken);
-        localStorage.setItem('loggedIn', true);
-        setCurrentUser(data.user);
-        setErrorMessage('');
-        navigate('/movies');
-      })
-      .catch((err) => {
-        setFormReset(true);
-        err.message === 'Ошибка: Bad Request'
-          ? setErrorMessage('При авторизации пользователя произошла ошибка')
-          : handleErrors(err);
-        console.log(err);
-      });
-  }
-
-  function signOut() {
-    return auth.logout().then((data) => {
-      if (data) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('saveCards');
-        localStorage.removeItem('loggedIn');
-        localStorage.removeItem('initialCards');
-
-        setStory({});
-        setCurrentUser({});
-
-        navigate('/');
-      }
-    });
   }
 
   // Обновление пользователя -------------------------
@@ -225,7 +192,7 @@ function App() {
       });
       if (!(arr.length === 0)) {
         setIsPreloader(false);
-        setCards(arr);
+        dispatch(setMovies(arr));
         // История поиска
         localStorage.setItem(
           'saveCards',
@@ -236,7 +203,8 @@ function App() {
           })
         );
         // строка в объект + рендер ------------------------------
-        setStory(JSON.parse(localStorage.getItem('saveCards')));
+        dispatch(setStoryMovies(JSON.parse(localStorage.getItem('saveCards'))));
+        // setStory(JSON.parse(localStorage.getItem('saveCards')));
       } else {
         setPreloaderMessage('Ничего не найдено');
       }
@@ -266,12 +234,20 @@ function App() {
     });
     if (!(arr.length === 0)) {
       setIsPreloader(false);
-      setSavedCards(arr);
-      setStorySavePage({
-        isToggle: isToggle,
-        value: value,
-        arr: arr,
-      });
+      dispatch(setSaveMovies(arr));
+      // setSavedCards(arr);
+      dispatch(
+        setStorySavedMovies({
+          isToggle: isToggle,
+          value: value,
+          arr: arr,
+        })
+      );
+      // setStorySavePage({
+      //   isToggle: isToggle,
+      //   value: value,
+      //   arr: arr,
+      // });
     } else {
       setPreloaderMessage('Ничего не найдено');
     }
@@ -365,27 +341,11 @@ function App() {
           <Route path='/' element={<ProtectedRoute />}>
             <Route
               path='/sign-in'
-              loggedIn={loggedIn}
-              element={
-                <Login
-                  handleLogin={handleLogin}
-                  errorMessage={errorMessage}
-                  formReset={formReset}
-                  resetErrors={resetErrors}
-                />
-              }
+              element={<Login resetErrors={resetErrors} />}
             />
             <Route
               path='/sign-up'
-              loggedIn={loggedIn}
-              element={
-                <Register
-                  handleRegister={handleRegister}
-                  errorMessage={errorMessage}
-                  formReset={formReset}
-                  resetErrors={resetErrors}
-                />
-              }
+              element={<Register resetErrors={resetErrors} />}
             />
           </Route>
           <Route
@@ -395,7 +355,6 @@ function App() {
               <>
                 <Header loggedIn={loggedIn} />
                 <Profile
-                  signOut={signOut}
                   handleUpdateUser={handleUpdateUser}
                   errorMessage={errorMessage}
                   getInitialSaveCards={getInitialSaveCards}
@@ -405,12 +364,10 @@ function App() {
           />
           <Route
             path='/movies'
-            loggedIn={loggedIn}
             element={
               <>
                 <Header loggedIn={loggedIn} />
                 <Movies
-                  cards={cards}
                   story={story}
                   getInitialCards={getInitialCards}
                   getInitialSaveCards={getInitialSaveCards}
@@ -418,7 +375,7 @@ function App() {
                   searchShortCards={searchShortCards}
                   addCard={addCard}
                   deleteCard={deleteCard}
-                  initialSavedCards={initialSavedCards}
+                  // initialSavedCards={initialSavedCards}
                   savedCards={savedCards}
                   isPreloader={isPreloader}
                   preloaderMessage={preloaderMessage}

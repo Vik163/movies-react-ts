@@ -1,5 +1,6 @@
 import { useCallback, useContext } from 'react';
 import { CurrentUserContext } from '../../../contexts/CurrentUserContext';
+import { useAppSelector } from '../../../hooks/redux';
 
 import './MoviesCard.css';
 
@@ -9,11 +10,16 @@ function MoviesCard(props) {
     isMobile,
     deleteCard,
     addCard,
-    savedCards,
-    initialSavedCards,
+    // savedCards,
+    // initialSavedCards,
     pageSaveMovies,
   } = props;
 
+  const { savedCards, initialSavedCards, user } = useAppSelector((state) => ({
+    user: state.userReducer.user,
+    savedCards: state.moviesReducer.moviesSaved,
+    initialSavedCards: state.moviesReducer.initialMoviesSaved,
+  }));
   const currentUser = useContext(CurrentUserContext);
 
   // Состояние лайка карты -----------------
@@ -21,7 +27,7 @@ function MoviesCard(props) {
     return initialSavedCards.some(
       (i) =>
         i.movieId === card.movieId ||
-        (i.owner === currentUser._id && i.movieId === card.id)
+        (i.owner === user._id && i.movieId === card.id)
     );
   }, [savedCards, pageSaveMovies]);
 

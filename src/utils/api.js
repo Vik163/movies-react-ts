@@ -36,13 +36,13 @@ $api.interceptors.response.use(
         // - Новый токен ---
         originRequest.headers.authorization = response.accessToken;
         localStorage.setItem('token', response.accessToken);
-        localStorage.setItem('loggedIn', true);
+        localStorage.setItem('loggedIn', 'true');
 
         // - Повторная отправка перехваченного запроса по config ---
         return $api.request(originRequest);
       }
     } catch (err) {
-      localStorage.setItem('loggedIn', false);
+      localStorage.setItem('loggedIn', 'false');
 
       console.log('Не авторизован');
     }
